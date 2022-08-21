@@ -14,8 +14,7 @@
 
 use std::{io::ErrorKind, path::PathBuf};
 
-use anyhow::anyhow;
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use barcode_service::protocol::{Date, Request, Response, Row};
 use futures_util::{SinkExt, StreamExt};
 use tokio::{fs::read_dir, net::TcpStream};
