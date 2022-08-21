@@ -1,0 +1,13 @@
+[server]
+listen = "127.0.0.1:2348"
+
+[logging.root]
+level = "debug"
+appenders = ["stdout"]
+
+[logging.appenders.stdout]
+kind = "console"
+encoder = { kind = "pattern" }
+
+[barcode]
+path = "../barcode_scan_tools/_data_/db"

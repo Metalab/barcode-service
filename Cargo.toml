@@ -1,0 +1,21 @@
+[package]
+name = "barcode_service"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.17"
+log4rs = { version = "1.1.1", features = ["json_encoder", "background_rotation", "file_appender"] }
+clap = { version = "3.2.17", features = ["derive"] }
+tokio = { version = "1.20.1", features = ["macros", "rt", "fs", "net"] }
+serde = { version = "1.0.144", features = ["derive"] }
+toml = "0.5.9"
+anyhow = "1.0.62"
+tokio-serde-cbor = "0.6.0"
+tokio-util = "0.6.10"
+futures-util = { version = "0.3.23", features = ["sink"] }
+
+[dev-dependencies]
+serde_cbor = "0.11.1"
