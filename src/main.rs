@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[allow(clippy::pedantic)]
+#![allow(clippy::pedantic)]
 use std::path::PathBuf;
 
 use anyhow::Error;
