@@ -17,7 +17,7 @@ use anyhow::Error;
 use barcode_service::protocol::{Request, Response};
 use clap::Parser;
 use futures_util::{SinkExt, StreamExt};
-use time::{format_description, Date};
+use time::{format_description, Date, OffsetDateTime};
 use tokio::net::TcpStream;
 use tokio_postgres::{Config, NoTls};
 use tokio_serde_cbor::Codec;
@@ -35,12 +35,12 @@ create table drinks (
 
 #[derive(Parser)]
 struct BarcodeParams {
-    /// Request data starting from this date (inclusive). Format: YYYY-MM-DD
+    /// Request data starting from this date (inclusive). Format: YYYY-MM-DD, defaults to yesterday
     #[clap(value_parser = parse_date)]
-    start: Date,
-    /// Request data ending on this date (inclusive). Format: YYYY-MM-DD
+    start: Option<Date>,
+    /// Request data ending on this date (inclusive). Format: YYYY-MM-DD, defaults to yesterday
     #[clap(value_parser = parse_date)]
-    end: Date,
+    end: Option<Date>,
     /// IP and port to connect to
     #[clap(short, long, default_value = "127.0.0.1:2348")]
     server: String,
@@ -70,8 +70,20 @@ async fn main() -> Result<(), Error> {
     let mut framed = codec.framed(stream);
 
     let request = Request {
-        start: config.start,
-        end: config.end,
+        start: config.start.unwrap_or_else(|| {
+            OffsetDateTime::now_local()
+                .unwrap_or_else(|_| OffsetDateTime::now_utc())
+                .date()
+                .previous_day()
+                .unwrap()
+        }),
+        end: config.end.unwrap_or_else(|| {
+            OffsetDateTime::now_local()
+                .unwrap_or_else(|_| OffsetDateTime::now_utc())
+                .date()
+                .previous_day()
+                .unwrap()
+        }),
     };
 
     framed.send(request).await?;
