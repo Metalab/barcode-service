@@ -15,8 +15,9 @@
 use std::{io::ErrorKind, path::PathBuf};
 
 use anyhow::{anyhow, Error};
-use barcode_service::protocol::{Date, Request, Response, Row};
+use barcode_service::protocol::{Request, Response, Row};
 use futures_util::{SinkExt, StreamExt};
+use time::format_description;
 use tokio::{fs::read_dir, net::TcpStream};
 use tokio_serde_cbor::Codec;
 use tokio_util::codec::Decoder;
@@ -32,14 +33,11 @@ pub async fn handle(stream: TcpStream, path: impl Into<PathBuf>) -> Result<(), E
 
         let mut response = Response(Vec::new());
         {
-            let mut date = Date {
-                year: request.start.year,
-                month: request.start.month,
-                day: request.start.day,
-            };
+            let format = format_description::parse("[year]-[month]-[day]")?;
+            let mut date = request.start;
             while date <= request.end {
                 let mut dir_path = path.clone();
-                dir_path.push(date.to_string());
+                dir_path.push(date.format(&format).unwrap());
 
                 log::debug!("Reading path {dir_path:?}");
                 match read_dir(&dir_path).await {
@@ -65,7 +63,7 @@ pub async fn handle(stream: TcpStream, path: impl Into<PathBuf>) -> Result<(), E
                     }
                     Err(_) => {}
                 }
-                date = date.next();
+                date = date.next_day().unwrap();
             }
         }
         framed.send(response).await?;

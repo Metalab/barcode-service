@@ -14,9 +14,10 @@
 
 #![allow(clippy::pedantic)]
 use anyhow::Error;
-use barcode_service::protocol::{Date, Request, Response};
+use barcode_service::protocol::{Request, Response};
 use clap::Parser;
 use futures_util::{SinkExt, StreamExt};
+use time::{format_description, Date};
 use tokio::net::TcpStream;
 use tokio_postgres::{Config, NoTls};
 use tokio_serde_cbor::Codec;
@@ -34,12 +35,12 @@ create table drinks (
 
 #[derive(Parser)]
 struct BarcodeParams {
-    start_year: u16,
-    start_month: u8,
-    start_day: u8,
-    end_year: u16,
-    end_month: u8,
-    end_day: u8,
+    /// Request data starting from this date (inclusive). Format: YYYY-MM-DD
+    #[clap(value_parser = parse_date)]
+    start: Date,
+    /// Request data ending on this date (inclusive). Format: YYYY-MM-DD
+    #[clap(value_parser = parse_date)]
+    end: Date,
     /// IP and port to connect to
     #[clap(short, long, default_value = "127.0.0.1:2348")]
     server: String,
@@ -55,6 +56,11 @@ struct BarcodeParams {
     db_password: String,
 }
 
+fn parse_date(s: &str) -> Result<Date, Box<dyn std::error::Error + Send + Sync + 'static>> {
+    let format = format_description::parse("[year]-[month]-[day]")?;
+    Ok(Date::parse(s, &format)?)
+}
+
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Error> {
     let config = BarcodeParams::parse();
@@ -64,16 +70,8 @@ async fn main() -> Result<(), Error> {
     let mut framed = codec.framed(stream);
 
     let request = Request {
-        start: Date {
-            year: config.start_year,
-            month: config.start_month,
-            day: config.start_day,
-        },
-        end: Date {
-            year: config.end_year,
-            month: config.end_month,
-            day: config.end_day,
-        },
+        start: config.start,
+        end: config.end,
     };
 
     framed.send(request).await?;
@@ -108,8 +106,8 @@ async fn main() -> Result<(), Error> {
     for row in response.0 {
         row_count += transaction
             .execute(
-                "INSERT INTO drinks (`date`, ean, count) VALUES ($1, $2, $3)",
-                &[&row.date.to_string(), &row.code, &(row.count as i32)],
+                "INSERT INTO drinks (date, ean, count) VALUES ($1, $2, $3)",
+                &[&row.date, &row.code, &(row.count as i32)],
             )
             .await?;
     }
