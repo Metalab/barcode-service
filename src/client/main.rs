@@ -25,7 +25,7 @@ use tokio_util::codec::Decoder;
 /*
 create table drinks (
     id serial primary key,
-    date varchar(8) not null,
+    date date not null,
     ean varchar(255) not null,
     count int not null,
     unique (date, ean)
@@ -108,8 +108,8 @@ async fn main() -> Result<(), Error> {
     for row in response.0 {
         row_count += transaction
             .execute(
-                "INSERT INTO drinks (`date`, ean, count) VALUES (?, ?, ?)",
-                &[&row.date.to_string(), &row.code, &row.count],
+                "INSERT INTO drinks (`date`, ean, count) VALUES ($1, $2, $3)",
+                &[&row.date.to_string(), &row.code, &(row.count as i32)],
             )
             .await?;
     }
