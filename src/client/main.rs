@@ -118,7 +118,7 @@ async fn main() -> Result<(), Error> {
     for row in response.0 {
         row_count += transaction
             .execute(
-                "INSERT INTO drinks (date, ean, count) VALUES ($1, $2, $3)",
+                "INSERT INTO drinks (date, ean, count) VALUES ($1, $2, $3) ON CONFLICT (date, ean) DO UPDATE SET count = $3",
                 &[&row.date, &row.code, &(row.count as i32)],
             )
             .await?;
